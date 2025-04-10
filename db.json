@@ -1,0 +1,42 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "fullName": "Julie",
+      "email": "julie@admin.com",
+      "password": "Akagami@666",
+      "isAdmin": true,
+      "isApproved": true
+    },
+    {
+      "fullName": "teste",
+      "email": "teste@gmail.com",
+      "password": "123456",
+      "isAdmin": false,
+      "isApproved": true,
+      "id": 2
+    }
+  ],
+  "pets": [],
+  "pendingUsers": [],
+  "upload": [
+    {
+      "id": 1
+    },
+    {
+      "id": 2
+    },
+    {
+      "id": 3
+    },
+    {
+      "id": 4
+    },
+    {
+      "id": 5
+    },
+    {
+      "id": 6
+    }
+  ]
+}

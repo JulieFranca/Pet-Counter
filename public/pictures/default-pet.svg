@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="150" height="150" viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fundo -->
+  <rect x="0" y="0" width="150" height="150" fill="#f0f0f0" rx="75" ry="75"/>
+  
+  <!-- Rosto -->
+  <circle cx="75" cy="75" r="50" fill="#e0e0e0"/>
+  
+  <!-- Olhos -->
+  <circle cx="55" cy="65" r="7" fill="#606060"/>
+  <circle cx="95" cy="65" r="7" fill="#606060"/>
+  
+  <!-- Nariz -->
+  <circle cx="75" cy="80" r="5" fill="#505050"/>
+  
+  <!-- Boca -->
+  <path d="M60,90 Q75,100 90,90" stroke="#505050" stroke-width="2" fill="none"/>
+  
+  <!-- Orelhas -->
+  <path d="M30,40 Q50,20 60,40" fill="#d0d0d0"/>
+  <path d="M120,40 Q100,20 90,40" fill="#d0d0d0"/>
+  
+  <!-- Texto -->
+  <text x="75" y="135" font-family="Arial" font-size="12" fill="#808080" text-anchor="middle">Foto do Pet</text>
+</svg> 
