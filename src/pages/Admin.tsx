@@ -42,6 +42,7 @@ const Admin: React.FC = () => {
   });
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{id: number, type: 'pet' | 'user'} | null>(null);
+  const [imageErrors, setImageErrors] = useState<{[key: number]: boolean}>({});
 
   const user = useSelector((state: any) => state.auth.user);
   const navigate = useNavigate();
@@ -256,6 +257,13 @@ const Admin: React.FC = () => {
     setShowAddPetModal(true);
   };
 
+  const handleImageError = (petId: number) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [petId]: true
+    }));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -420,14 +428,16 @@ const Admin: React.FC = () => {
                   className="bg-white rounded-lg shadow overflow-hidden hover:shadow-xl transition-shadow"
                 >
                   <div className="flex justify-center p-4">
-                    <div className="w-32 h-32 rounded-full overflow-hidden">
+                    <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100">
                       <img 
-                        src={pet.photo || DEFAULT_PET_IMAGE} 
+                        src={imageErrors[pet.id] ? DEFAULT_PET_IMAGE : (pet.photo || DEFAULT_PET_IMAGE)}
                         alt={pet.name} 
                         className="w-full h-full object-cover"
+                        onError={() => handleImageError(pet.id)}
                       />
                     </div>
                   </div>
+                  
                   <div className="p-4 text-center">
                     <h3 className="text-lg font-medium text-gray-800">{pet.name}</h3>
                     <p className="text-sm text-gray-500 mt-1">Dono: {

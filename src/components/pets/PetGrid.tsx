@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,15 @@ interface PetGridProps {
 }
 
 export default function PetGrid({ pets, isAdmin = false }: PetGridProps) {
+  const [imageErrors, setImageErrors] = useState<{[key: number]: boolean}>({});
+
+  const handleImageError = (petId: number) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [petId]: true
+    }));
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {pets.map((pet) => (
@@ -24,11 +33,12 @@ export default function PetGrid({ pets, isAdmin = false }: PetGridProps) {
           <Card className="overflow-hidden">
             <CardContent className="p-4">
               <div className="flex flex-col items-center">
-                <div className="w-32 h-32 rounded-full overflow-hidden mb-4">
+                <div className="w-32 h-32 rounded-full overflow-hidden mb-4 bg-gray-100">
                   <img
-                    src={pet.photo || DEFAULT_PET_IMAGE}
+                    src={imageErrors[pet.id] ? DEFAULT_PET_IMAGE : (pet.photo || DEFAULT_PET_IMAGE)}
                     alt={pet.name}
                     className="w-full h-full object-cover"
+                    onError={() => handleImageError(pet.id)}
                   />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{pet.name}</h3>

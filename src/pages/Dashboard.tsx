@@ -39,6 +39,7 @@ const Dashboard: React.FC = () => {
     bio: '',
     photo: ''
   });
+  const [imageErrors, setImageErrors] = useState<{[key: number]: boolean}>({});
 
   const user = useSelector((state: any) => state.auth.user);
   const navigate = useNavigate();
@@ -130,6 +131,13 @@ const Dashboard: React.FC = () => {
     setSelectedPet(null);
   };
 
+  const handleImageError = (petId: number) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [petId]: true
+    }));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -169,11 +177,12 @@ const Dashboard: React.FC = () => {
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
             >
               <div className="flex justify-center p-4">
-                <div className="w-24 h-24 rounded-full overflow-hidden">
+                <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100">
                   <img 
-                    src={pet.photo || DEFAULT_PET_IMAGE} 
+                    src={imageErrors[pet.id] ? DEFAULT_PET_IMAGE : (pet.photo || DEFAULT_PET_IMAGE)}
                     alt={pet.name} 
                     className="w-full h-full object-cover"
+                    onError={() => handleImageError(pet.id)}
                   />
                 </div>
               </div>

@@ -17,6 +17,7 @@ const PetForm: React.FC = () => {
     age: 0,
     bio: '',
     photo: '',
+    owner: localStorage.getItem('userId') || ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -31,6 +32,7 @@ const PetForm: React.FC = () => {
           setPet(data);
         } catch (error) {
           console.error('Erro ao carregar pet:', error);
+          setError('Erro ao carregar pet');
         }
       }
     };
@@ -44,6 +46,10 @@ const PetForm: React.FC = () => {
     setError('');
 
     try {
+      if (!pet.owner) {
+        throw new Error('Usuário não identificado');
+      }
+
       if (id) {
         await petApi.updatePet(parseInt(id), pet);
       } else {
@@ -51,6 +57,7 @@ const PetForm: React.FC = () => {
       }
       navigate('/pets');
     } catch (err) {
+      console.error('Erro ao salvar pet:', err);
       setError('Erro ao salvar pet');
     } finally {
       setLoading(false);

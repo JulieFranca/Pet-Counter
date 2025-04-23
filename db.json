@@ -17,7 +17,16 @@
       "id": 2
     }
   ],
-  "pets": [],
+  "pets": [
+    {
+      "name": "Kit",
+      "age": 2,
+      "bio": "teste",
+      "photo": "https://scontent.fpoa11-1.fna.fbcdn.net/v/t39.30808-6/492079577_3181212155361732_4376631476395853733_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=833d8c&_nc_eui2=AeEKxIaVy2rGtZP8j6V1-XxEdMs0HRPmbFZ0yzQdE-ZsVqf0noxxAnrWvXLhhGrXbvjtUf4KiTR2DkGyxENwMfyd&_nc_ohc=zqrtdEIkXH4Q7kNvwFRMhCs&_nc_oc=Adnd_3Zscfh-QVnjPRkEw9urNkjIIDyXBS49nC_DXnbKJN6di4gYXxzfViufkRm563IkNUhYvHuCVz8Z-oXbrGvT&_nc_zt=23&_nc_ht=scontent.fpoa11-1.fna&_nc_gid=EADMxsBA3bDJcVz016-zgA&oh=00_AfHEqAeaShtLTixE4dh1qSffUu-0VewBKZ0uGsn-z9VJqg&oe=680ED331",
+      "owner": "1",
+      "id": 1
+    }
+  ],
   "pendingUsers": [],
   "upload": [
     {
