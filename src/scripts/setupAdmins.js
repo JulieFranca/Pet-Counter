@@ -4,6 +4,10 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync } from 'fs';
+import dotenv from 'dotenv';
+
+// Carregar variáveis de ambiente
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,12 +28,12 @@ const db = getFirestore();
 
 const adminUsers = [
   {
-    email: 'juliefrancasouza@gmail.com',
-    password: 'Akagami@666'
+    email: process.env.ADMIN_EMAIL_1,
+    password: process.env.ADMIN_PASSWORD_1
   },
   {
-    email: 'Julie@admin.com',
-    password: 'Akagami@666'
+    email: process.env.ADMIN_EMAIL_2,
+    password: process.env.ADMIN_PASSWORD_2
   }
 ];
 
@@ -43,11 +47,9 @@ async function setupAdmin(email, password) {
         password,
         emailVerified: true
       });
-      console.log(`Usuário ${email} criado no Authentication`);
     } catch (error) {
       if (error.code === 'auth/email-already-exists') {
         userRecord = await auth.getUserByEmail(email);
-        console.log(`Usuário ${email} já existe no Authentication`);
       } else {
         throw error;
       }
@@ -64,7 +66,6 @@ async function setupAdmin(email, password) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
 
-    console.log(`Usuário ${email} configurado como admin com sucesso!`);
     return true;
   } catch (error) {
     console.error(`Erro ao configurar admin ${email}:`, error);
