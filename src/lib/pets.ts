@@ -20,87 +20,43 @@ import { DEFAULT_PET_IMAGE } from '@/constants';
 
 export interface PetData {
   name: string;
-  age?: number;
-  bio?: string;
-  photo?: string | null;
+  age: number;
+  bio: string;
+  photo: string;
   ownerId: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export const addPet = async (petData: Omit<PetData, 'createdAt' | 'updatedAt'>) => {
-  const now = Timestamp.now();
-  const newPet = {
+export const addPet = async (petData: Omit<PetData, 'createdAt' | 'updatedAt'>): Promise<string> => {
+  const petRef = await addDoc(collection(db, 'pets'), {
     ...petData,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  try {
-    const docRef = await addDoc(collection(db, 'pets'), newPet);
-    return docRef.id;
-  } catch (error) {
-    console.error('Erro ao adicionar pet:', error);
-    throw new Error('Erro ao salvar o pet');
-  }
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+  return petRef.id;
 };
 
-export const updatePet = async (petId: string, userId: string, petData: Partial<PetData>) => {
-  try {
-    // Verificar se o pet pertence ao usuário
-    const petRef = doc(db, 'pets', petId);
-    const pet = await getDocs(query(collection(db, 'pets'), where('ownerId', '==', userId)));
-    
-    if (pet.empty) {
-      throw new Error('Você não tem permissão para editar este pet');
-    }
-
-    const updateData = {
-      ...petData,
-      // Se a foto for removida, usar a foto padrão
-      photo: petData.photo === null ? DEFAULT_PET_IMAGE : petData.photo,
-      updatedAt: Timestamp.now(),
-    };
-
-    await updateDoc(petRef, updateData);
-  } catch (error) {
-    console.error('Erro ao atualizar pet:', error);
-    throw new Error('Erro ao atualizar o pet');
-  }
+export const updatePet = async (petId: string, petData: Partial<PetData>): Promise<void> => {
+  const petRef = doc(db, 'pets', petId);
+  await updateDoc(petRef, {
+    ...petData,
+    updatedAt: new Date()
+  });
 };
 
-export const deletePet = async (petId: string, userId: string) => {
-  try {
-    // Verificar se o pet pertence ao usuário
-    const pet = await getDocs(query(collection(db, 'pets'), where('ownerId', '==', userId)));
-    
-    if (pet.empty) {
-      throw new Error('Você não tem permissão para deletar este pet');
-    }
-
-    await deleteDoc(doc(db, 'pets', petId));
-  } catch (error) {
-    console.error('Erro ao deletar pet:', error);
-    throw error;
-  }
+export const deletePet = async (petId: string): Promise<void> => {
+  const petRef = doc(db, 'pets', petId);
+  await deleteDoc(petRef);
 };
 
-export const getUserPets = async (userId: string) => {
-  try {
-    const q = query(
-      collection(db, 'pets'),
-      where('ownerId', '==', userId)
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    console.error('Erro ao buscar pets do usuário:', error);
-    throw error;
-  }
+export const getPetsByOwner = async (ownerId: string): Promise<Pet[]> => {
+  const petsQuery = query(collection(db, 'pets'), where('ownerId', '==', ownerId));
+  const querySnapshot = await getDocs(petsQuery);
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Pet));
 };
 
 // Função para deletar todos os pets de um usuário

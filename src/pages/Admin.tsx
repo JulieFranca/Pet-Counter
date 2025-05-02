@@ -24,8 +24,8 @@ const Admin: React.FC = () => {
     photo: ''
   });
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{id: number, type: 'pet' | 'user'} | null>(null);
-  const [imageErrors, setImageErrors] = useState<{[key: number]: boolean}>({});
+  const [itemToDelete, setItemToDelete] = useState<{id: string, type: 'pet' | 'user'} | null>(null);
+  const [imageErrors, setImageErrors] = useState<{[key: string]: boolean}>({});
 
   const user = useSelector((state: any) => state.auth.user);
   const navigate = useNavigate();
@@ -113,7 +113,7 @@ const Admin: React.FC = () => {
     }
   };
 
-  const handleMakeAdmin = async (userId: number) => {
+  const handleMakeAdmin = async (userId: string) => {
     try {
       const userToUpdate = users.find(u => u.id === userId);
       if (!userToUpdate) return;
@@ -133,34 +133,28 @@ const Admin: React.FC = () => {
       
       if (!response.ok) throw new Error('Erro ao atualizar permissões');
       
-      // Atualizar os dados
       fetchData();
     } catch (error) {
       console.error('Erro ao atualizar permissões:', error);
     }
   };
 
-  const handleDeleteUser = async (userId: number) => {
+  const handleDeleteUser = async (userId: string) => {
     try {
-      // Primeiro, excluir todos os pets do usuário
-      const userPets = pets.filter(pet => pet.owner === userId.toString());
+      const userPets = pets.filter(pet => pet.ownerId === userId);
       for (const pet of userPets) {
         await fetch(`/api/pets/${pet.id}`, {
           method: 'DELETE'
         });
       }
       
-      // Depois, excluir o usuário
       const response = await fetch(`/api/users/${userId}`, {
         method: 'DELETE'
       });
       
       if (!response.ok) throw new Error('Erro ao excluir usuário');
       
-      // Atualizar os dados
       fetchData();
-      
-      // Fechar o modal de confirmação se estiver aberto
       setShowConfirmDeleteModal(false);
       setItemToDelete(null);
     } catch (error) {
@@ -168,7 +162,7 @@ const Admin: React.FC = () => {
     }
   };
 
-  const handleDeletePet = async (petId: number) => {
+  const handleDeletePet = async (petId: string) => {
     try {
       const response = await fetch(`/api/pets/${petId}`, {
         method: 'DELETE'
@@ -176,10 +170,7 @@ const Admin: React.FC = () => {
       
       if (!response.ok) throw new Error('Erro ao excluir pet');
       
-      // Atualizar os dados
       fetchData();
-      
-      // Fechar modais se estiverem abertos
       setSelectedPet(null);
       setShowConfirmDeleteModal(false);
       setItemToDelete(null);
@@ -188,7 +179,7 @@ const Admin: React.FC = () => {
     }
   };
 
-  const confirmDelete = (id: number, type: 'pet' | 'user') => {
+  const confirmDelete = (id: string, type: 'pet' | 'user') => {
     setItemToDelete({ id, type });
     setShowConfirmDeleteModal(true);
   };
@@ -240,7 +231,7 @@ const Admin: React.FC = () => {
     setShowAddPetModal(true);
   };
 
-  const handleImageError = (petId: number) => {
+  const handleImageError = (petId: string) => {
     setImageErrors(prev => ({
       ...prev,
       [petId]: true
@@ -378,7 +369,7 @@ const Admin: React.FC = () => {
                           </>
                         )}
                         <button
-                          onClick={() => openAddPetModal(user.id.toString())}
+                          onClick={() => openAddPetModal(user.id)}
                           className="text-blue-500 hover:text-blue-700"
                         >
                           Adicionar Pet
@@ -425,7 +416,7 @@ const Admin: React.FC = () => {
                     <h3 className="text-lg font-medium text-gray-800">{pet.name}</h3>
                     <p className="text-sm text-gray-500 mt-1">Dono: {
                       (() => {
-                        const ownerUser = users.find(u => u.id.toString() === pet.owner);
+                        const ownerUser = users.find(u => u.id === pet.owner);
                         return ownerUser ? ownerUser.fullName : `ID ${pet.owner}`;
                       })()
                     }</p>
@@ -485,7 +476,7 @@ const Admin: React.FC = () => {
                   <h3 className="text-sm font-medium text-gray-700">Dono</h3>
                   <p className="text-gray-600">{
                     (() => {
-                      const ownerUser = users.find(u => u.id.toString() === selectedPet.owner);
+                      const ownerUser = users.find(u => u.id === selectedPet.owner);
                       return ownerUser ? ownerUser.fullName : `ID ${selectedPet.owner}`;
                     })()
                   }</p>
