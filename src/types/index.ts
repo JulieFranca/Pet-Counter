@@ -3,24 +3,31 @@ import { Timestamp } from 'firebase/firestore';
 export interface User {
   id: string;
   email: string;
-  fullName: string;
-  isAdmin: boolean;
-  isApproved: boolean;
+  firstName: string;
+  lastName: string;
+  role: 'admin' | 'user';
+  status: 'pending' | 'approved' | 'rejected';
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  hasCompletedProfile: boolean;
 }
 
 export interface Pet {
   id: string;
   name: string;
-  age: number;
-  bio: string;
-  photo: string;
   ownerId: string;
+  photo?: string;
+  age?: number;
+  bio?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
 export interface PendingUser {
-  id: string;
-  email: string;
+  id: number;
   fullName: string;
+  email: string;
   password: string;
 }
 
@@ -33,15 +40,10 @@ export interface AuthState {
 
 export interface PetFormData {
   name: string;
-  age: string;
+  age: string | number;
   bio: string;
   photo: string;
-}
-
-export interface PetFormProps {
-  onClose: () => void;
-  onSuccess: () => void;
-  ownerId?: string;
+  owner?: string;
 }
 
 export interface LayoutProps {

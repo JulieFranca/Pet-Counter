@@ -1,11 +1,23 @@
 import React, { useState, useRef } from 'react';
-import { useAuth } from "@/contexts/AuthContext";
-import { addPet, updatePet } from "@/lib/pets";
-import imageCompression from "browser-image-compression";
-import { PetFormProps } from '@/types';
+import { Pet } from '@/types';
 import { X, Image as ImageIcon } from "lucide-react";
 import { DEFAULT_PET_IMAGE, MAX_IMAGE_SIZE, ALLOWED_IMAGE_TYPES, PET_IMAGES_DIR } from '@/constants';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useAuth } from '@/contexts/AuthContext';
+import { addPet, updatePet, PetData } from '@/lib/pets';
+import imageCompression from 'browser-image-compression';
+
+interface PetFormProps {
+  onClose: () => void;
+  onSuccess: () => void;
+  pet?: PetData & { id?: string };
+}
+
+interface PetFormState {
+  name: string;
+  age: number | '';
+  bio: string;
+  photo: string | null;
+}
 
 const MAX_NAME_LENGTH = 50;
 const MAX_BIO_LENGTH = 500;
@@ -14,27 +26,20 @@ const MAX_FILE_SIZE = 1024 * 1024; // 1MB após compressão
 const MAX_IMAGE_WIDTH = 800; // Largura máxima da imagem
 const MAX_IMAGE_HEIGHT = 800; // Altura máxima da imagem
 
-const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, ownerId }) => {
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [bio, setBio] = useState('');
-  const [photo, setPhoto] = useState<File | null>(null);
+const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
+  const { user } = useAuth();
+  const [petState, setPetState] = useState<PetFormState>({
+    name: pet?.name || '',
+    age: pet?.age || '',
+    bio: pet?.bio || '',
+    photo: pet?.photo || DEFAULT_PET_IMAGE,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [previewUrl, setPreviewUrl] = useState<string>(DEFAULT_PET_IMAGE);
+  const [previewUrl, setPreviewUrl] = useState<string>(pet?.photo || DEFAULT_PET_IMAGE);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user } = useAuth();
-
-  const uploadImage = async (file: File): Promise<string> => {
-    if (!user) throw new Error('Usuário não autenticado');
-    
-    const storage = getStorage();
-    const storageRef = ref(storage, `pet-images/${user.uid}/${Date.now()}-${file.name}`);
-    await uploadBytes(storageRef, file);
-    return getDownloadURL(storageRef);
-  };
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
@@ -176,16 +181,16 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, ownerId }) => {
 
         setUploadProgress(100);
         setPreviewUrl(base64String);
-        setPhoto(compressedFile);
+        setPetState(prev => ({ ...prev, photo: base64String }));
       } catch (error) {
         console.error('Erro ao processar imagem:', error);
         setError('Erro ao processar imagem. O pet será salvo sem imagem.');
-        setPhoto(null);
+        setPetState(prev => ({ ...prev, photo: null }));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao processar imagem');
       console.error('Erro ao processar imagem:', err);
-      setPhoto(null);
+      setPetState(prev => ({ ...prev, photo: null }));
     } finally {
       setLoading(false);
     }
@@ -197,14 +202,13 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, ownerId }) => {
     if (id === 'age') {
       // Permite apenas números ou campo vazio
       if (value === '' || /^\d+$/.test(value)) {
-        setAge(value === '' ? '' : value);
+        setPetState(prev => ({
+          ...prev,
+          [id]: value === '' ? '' : Number(value)
+        }));
       }
     } else {
-      if (id === 'name') {
-        setName(value);
-      } else if (id === 'bio') {
-        setBio(value);
-      }
+      setPetState(prev => ({ ...prev, [id]: value }));
     }
   };
 
@@ -212,21 +216,21 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, ownerId }) => {
     const errors: { [key: string]: string } = {};
 
     // Validação do nome
-    if (!name.trim()) {
+    if (!petState.name.trim()) {
       errors.name = 'O nome do pet é obrigatório';
-    } else if (name.length > MAX_NAME_LENGTH) {
+    } else if (petState.name.length > MAX_NAME_LENGTH) {
       errors.name = 'O nome deve ter no máximo 50 caracteres';
-    } else if (!/^[a-zA-ZÀ-ÿ\s]*$/.test(name)) {
+    } else if (!/^[a-zA-ZÀ-ÿ\s]*$/.test(petState.name)) {
       errors.name = 'O nome deve conter apenas letras e espaços';
     }
 
     // Validação da idade
-    if (age !== '' && (age !== '' && (parseInt(age) < 0 || parseInt(age) > MAX_AGE))) {
+    if (petState.age !== '' && (typeof petState.age === 'number' && (petState.age < 0 || petState.age > MAX_AGE))) {
       errors.age = `Idade deve estar entre 0 e ${MAX_AGE} anos`;
     }
 
     // Validação da bio
-    if (bio && bio.length > MAX_BIO_LENGTH) {
+    if (petState.bio && petState.bio.length > MAX_BIO_LENGTH) {
       errors.bio = 'A biografia deve ter no máximo 500 caracteres';
     }
 
@@ -241,33 +245,34 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, ownerId }) => {
     setError('');
 
     try {
-      if (!user) throw new Error('Usuário não autenticado');
-      
-      let photoUrl = '';
-      if (photo) {
-        const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true
-        };
-        const compressedFile = await imageCompression(photo, options);
-        photoUrl = await uploadImage(compressedFile);
+      if (!validateForm()) {
+        setLoading(false);
+        return;
+      }
+
+      if (!user) {
+        throw new Error('Usuário não autenticado');
       }
 
       const petData = {
-        name,
-        age: parseInt(age),
-        bio,
-        photo: photoUrl,
-        ownerId: ownerId || user.uid
+        name: petState.name.trim(),
+        bio: petState.bio.trim(),
+        photo: petState.photo || undefined,
+        ownerId: user.uid,
+        ...(petState.age !== '' && { age: Number(petState.age) }),
       };
 
-      await addPet(petData);
+      if (pet?.id) {
+        await updatePet(pet.id, petData);
+      } else {
+        await addPet(petData);
+      }
+
       onSuccess();
       onClose();
     } catch (err) {
-      setError('Erro ao adicionar pet. Tente novamente.');
-      console.error(err);
+      console.error('Erro ao salvar pet:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao salvar pet');
     } finally {
       setLoading(false);
     }
@@ -276,7 +281,7 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, ownerId }) => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Cadastrar Pet</h2>
+        <h2 className="text-xl font-bold">{pet ? 'Editar Pet' : 'Cadastrar Pet'}</h2>
         <button 
           onClick={onClose}
           className="text-gray-500 hover:text-gray-700"
@@ -292,14 +297,14 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, ownerId }) => {
             type="text"
             id="name"
             name="name"
-            value={name}
+            value={petState.name}
             onChange={handleInputChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
             required
             maxLength={MAX_NAME_LENGTH}
             placeholder="Nome do pet"
           />
-          <span className="text-xs text-gray-500">{name.length}/{MAX_NAME_LENGTH}</span>
+          <span className="text-xs text-gray-500">{petState.name.length}/{MAX_NAME_LENGTH}</span>
           {error.includes('name') && (
             <p className="mt-1 text-sm text-red-600">{error}</p>
           )}
@@ -311,7 +316,7 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, ownerId }) => {
             type="number"
             id="age"
             name="age"
-            value={age}
+            value={petState.age}
             onChange={handleInputChange}
             min="0"
             max={MAX_AGE}
@@ -328,14 +333,14 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, ownerId }) => {
           <textarea
             id="bio"
             name="bio"
-            value={bio}
+            value={petState.bio}
             onChange={handleInputChange}
             rows={3}
             maxLength={MAX_BIO_LENGTH}
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
             placeholder="Conte um pouco sobre seu pet..."
           />
-          <span className="text-xs text-gray-500">{bio.length}/{MAX_BIO_LENGTH}</span>
+          <span className="text-xs text-gray-500">{petState.bio.length}/{MAX_BIO_LENGTH}</span>
           {error.includes('bio') && (
             <p className="mt-1 text-sm text-red-600">{error}</p>
           )}
@@ -418,7 +423,7 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, ownerId }) => {
             className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
               disabled={loading}
             >
-            {loading ? 'Salvando...' : 'Cadastrar'}
+            {loading ? 'Salvando...' : pet ? 'Atualizar' : 'Cadastrar'}
           </button>
         </div>
         </form>
