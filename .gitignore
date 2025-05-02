@@ -23,8 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 
-# Arquivos de credenciais
+# Arquivos de credenciais e ambiente
 serviceAccountKey.json
+.env
+.env.local
+.env.development
+.env.production
 *.json
 !package.json
 !package-lock.json
