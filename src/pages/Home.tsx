@@ -1,9 +1,8 @@
-import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
 export default function Home() {
-  const { user, userRole, logout } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -16,7 +15,6 @@ export default function Home() {
             <div className="flex items-center space-x-4">
               <span className="text-gray-700">
                 {user?.email}
-                {userRole === 'admin' && ' (Admin)'}
               </span>
               <button
                 onClick={logout}
@@ -43,20 +41,6 @@ export default function Home() {
                 Registre e gerencie seus pets aqui.
               </p>
             </Link>
-
-            {userRole === 'admin' && (
-              <Link
-                to="/admin"
-                className="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-50"
-              >
-                <h5 className="mb-2 text-2xl font-bold tracking-tight text-gray-900">
-                  Painel Admin
-                </h5>
-                <p className="font-normal text-gray-700">
-                  Gerencie usuários e configurações do sistema.
-                </p>
-              </Link>
-            )}
 
             <Link
               to="/dashboard"

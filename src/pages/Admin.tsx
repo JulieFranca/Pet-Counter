@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Pet, User, PendingUser, PetFormData } from '@/types';
+import { Pet, User, PendingUser } from '@/types';
 import { DEFAULT_PET_IMAGE } from '@/constants';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import PetGrid from '../components/pets/PetGrid';
 import { Trash2, UserX } from "lucide-react";
 import PetForm from './PetForm';
 
@@ -16,16 +14,9 @@ const Admin: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [showAddPetModal, setShowAddPetModal] = useState(false);
-  const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
-  const [petFormData, setPetFormData] = useState<PetFormData>({
-    name: '',
-    age: '',
-    bio: '',
-    photo: ''
-  });
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{id: number, type: 'pet' | 'user'} | null>(null);
-  const [imageErrors, setImageErrors] = useState<{[key: number]: boolean}>({});
+  const [itemToDelete, setItemToDelete] = useState<{id: string, type: 'pet' | 'user'} | null>(null);
+  const [imageErrors, setImageErrors] = useState<{[key: string]: boolean}>({});
 
   const user = useSelector((state: any) => state.auth.user);
   const navigate = useNavigate();
@@ -113,14 +104,14 @@ const Admin: React.FC = () => {
     }
   };
 
-  const handleMakeAdmin = async (userId: number) => {
+  const handleMakeAdmin = async (userId: string) => {
     try {
       const userToUpdate = users.find(u => u.id === userId);
       if (!userToUpdate) return;
       
       const updatedUser = {
         ...userToUpdate,
-        isAdmin: true
+        role: 'admin'
       };
       
       const response = await fetch(`/api/users/${userId}`, {
@@ -140,10 +131,10 @@ const Admin: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: number) => {
+  const handleDeleteUser = async (userId: string) => {
     try {
       // Primeiro, excluir todos os pets do usuário
-      const userPets = pets.filter(pet => pet.owner === userId.toString());
+      const userPets = pets.filter(pet => pet.ownerId === userId);
       for (const pet of userPets) {
         await fetch(`/api/pets/${pet.id}`, {
           method: 'DELETE'
@@ -168,7 +159,7 @@ const Admin: React.FC = () => {
     }
   };
 
-  const handleDeletePet = async (petId: number) => {
+  const handleDeletePet = async (petId: string) => {
     try {
       const response = await fetch(`/api/pets/${petId}`, {
         method: 'DELETE'
@@ -188,7 +179,7 @@ const Admin: React.FC = () => {
     }
   };
 
-  const confirmDelete = (id: number, type: 'pet' | 'user') => {
+  const confirmDelete = (id: string, type: 'pet' | 'user') => {
     setItemToDelete({ id, type });
     setShowConfirmDeleteModal(true);
   };
@@ -201,46 +192,11 @@ const Admin: React.FC = () => {
     setSelectedPet(null);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setPetFormData({ ...petFormData, [name]: value });
-  };
-
-  const handleAddPet = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      const petData = {
-        name: petFormData.name,
-        age: petFormData.age ? parseInt(petFormData.age) : undefined,
-        bio: petFormData.bio,
-        photo: petFormData.photo || DEFAULT_PET_IMAGE,
-        owner: selectedOwnerId
-      };
-
-      await fetch('/api/pets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(petData)
-      });
-      
-      setShowAddPetModal(false);
-      setPetFormData({ name: '', age: '', bio: '', photo: '' });
-      setSelectedOwnerId('');
-      fetchData();
-    } catch (error) {
-      console.error('Error adding pet:', error);
-    }
-  };
-
-  const openAddPetModal = (userId: string) => {
-    setSelectedOwnerId(userId);
+  const openAddPetModal = () => {
     setShowAddPetModal(true);
   };
 
-  const handleImageError = (petId: number) => {
+  const handleImageError = (petId: string) => {
     setImageErrors(prev => ({
       ...prev,
       [petId]: true
@@ -349,18 +305,18 @@ const Admin: React.FC = () => {
                   {users.map((user) => (
                     <tr key={user.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{user.fullName}</div>
+                        <div className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">{user.email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isAdmin ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}`}>
-                          {user.isAdmin ? 'Administrador' : 'Usuário'}
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}`}>
+                          {user.role === 'admin' ? 'Administrador' : 'Usuário'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {!user.isAdmin && (
+                        {user.role !== 'admin' && (
                           <>
                             <button
                               onClick={() => handleMakeAdmin(user.id)}
@@ -378,7 +334,7 @@ const Admin: React.FC = () => {
                           </>
                         )}
                         <button
-                          onClick={() => openAddPetModal(user.id.toString())}
+                          onClick={() => openAddPetModal()}
                           className="text-blue-500 hover:text-blue-700"
                         >
                           Adicionar Pet
@@ -425,8 +381,8 @@ const Admin: React.FC = () => {
                     <h3 className="text-lg font-medium text-gray-800">{pet.name}</h3>
                     <p className="text-sm text-gray-500 mt-1">Dono: {
                       (() => {
-                        const ownerUser = users.find(u => u.id.toString() === pet.owner);
-                        return ownerUser ? ownerUser.fullName : `ID ${pet.owner}`;
+                        const ownerUser = users.find(u => u.id === pet.ownerId);
+                        return ownerUser ? `${ownerUser.firstName} ${ownerUser.lastName}` : `ID ${pet.ownerId}`;
                       })()
                     }</p>
                     {pet.age && <p className="text-sm text-gray-500 mt-1">{pet.age} anos</p>}
@@ -485,8 +441,8 @@ const Admin: React.FC = () => {
                   <h3 className="text-sm font-medium text-gray-700">Dono</h3>
                   <p className="text-gray-600">{
                     (() => {
-                      const ownerUser = users.find(u => u.id.toString() === selectedPet.owner);
-                      return ownerUser ? ownerUser.fullName : `ID ${selectedPet.owner}`;
+                      const ownerUser = users.find(u => u.id === selectedPet.ownerId);
+                      return ownerUser ? `${ownerUser.firstName} ${ownerUser.lastName}` : `ID ${selectedPet.ownerId}`;
                     })()
                   }</p>
                 </div>
@@ -537,7 +493,6 @@ const Admin: React.FC = () => {
                 setShowAddPetModal(false);
                 fetchData();
               }}
-              ownerEmail={selectedOwnerId}
             />
           </div>
         </div>

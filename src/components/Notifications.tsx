@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, updateDoc, doc, Timestamp, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,14 +31,14 @@ export default function Notifications() {
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const notificationsPromises = snapshot.docs.map(async (doc) => {
-        const notificationData = doc.data();
+      const notificationsPromises = snapshot.docs.map(async (snap) => {
+        const notificationData = snap.data();
         // Buscar a foto do pet
         const petDoc = await getDoc(doc(db, 'pets', notificationData.petId));
-        const petData = petDoc.data();
+        const petData = petDoc.data() as { photo?: string } | undefined;
         
         return {
-          id: doc.id,
+          id: snap.id,
           ...notificationData,
           petPhoto: petData?.photo || DEFAULT_PET_IMAGE
         } as Notification;

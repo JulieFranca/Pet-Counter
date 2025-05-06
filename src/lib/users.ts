@@ -4,7 +4,6 @@ import {
   getDoc,
   setDoc,
   updateDoc,
-  deleteDoc,
   query,
   where,
   getDocs,
@@ -12,7 +11,6 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { deleteUserPets } from './pets';
 import { User, Pet } from '@/types/index';
 
 export const createUserDocument = async (userId: string, email: string, firstName?: string, lastName?: string) => {

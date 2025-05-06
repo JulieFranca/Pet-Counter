@@ -6,7 +6,7 @@ import { Trash2 } from "lucide-react";
 interface PetGridProps {
   pets: Pet[];
   onPetClick?: (pet: Pet) => void;
-  onDeleteClick?: (petId: number) => void;
+  onDeleteClick?: (petId: string) => void;
   showActions?: boolean;
 }
 
@@ -16,9 +16,9 @@ const PetGrid: React.FC<PetGridProps> = ({
   onDeleteClick,
   showActions = true
 }) => {
-  const [imageErrors, setImageErrors] = React.useState<{[key: number]: boolean}>({});
+  const [imageErrors, setImageErrors] = React.useState<{[key: string]: boolean}>({});
 
-  const handleImageError = (petId: number) => {
+  const handleImageError = (petId: string) => {
     setImageErrors(prev => ({
       ...prev,
       [petId]: true

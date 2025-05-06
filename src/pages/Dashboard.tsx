@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -13,10 +13,6 @@ import { collection, query, onSnapshot, doc, deleteDoc } from 'firebase/firestor
 import { db } from '@/lib/firebase';
 import { User, Pet } from '@/types/index';
 import { DEFAULT_PET_IMAGE } from '@/constants';
-import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
-import PetGrid from '../components/pets/PetGrid';
-import PetForm from './PetForm';
 
 export default function Dashboard() {
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);

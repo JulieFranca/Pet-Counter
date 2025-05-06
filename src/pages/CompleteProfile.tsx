@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { updateUserProfile } from '@/lib/users';
+import { updateUserProfile, getUserById } from '@/lib/users';
 
 export default function CompleteProfile() {
   const [firstName, setFirstName] = useState('');
