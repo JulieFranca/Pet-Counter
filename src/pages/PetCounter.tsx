@@ -169,7 +169,7 @@ const PetCounter: React.FC = () => {
         {showLogin && (
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <Login onClose={() => setShowLogin(false)} />
+              <Login />
             </div>
           </div>
         )}

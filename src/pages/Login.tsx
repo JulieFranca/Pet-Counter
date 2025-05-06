@@ -4,11 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-interface Pet {
-  id: string;
-  name: string;
-}
-
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Pet } from '@/types';
-import { X, Image as ImageIcon } from "lucide-react";
-import { DEFAULT_PET_IMAGE, MAX_IMAGE_SIZE, ALLOWED_IMAGE_TYPES, PET_IMAGES_DIR } from '@/constants';
+import { DEFAULT_PET_IMAGE, ALLOWED_IMAGE_TYPES } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { addPet, updatePet, PetData } from '@/lib/pets';
 import imageCompression from 'browser-image-compression';
 import { getUserById } from '@/lib/users';
-import { calculateAgeInMonths, formatAge, formatDate, parseDate } from '@/utils/dateUtils';
+import { calculateAgeInMonths, parseDate } from '@/utils/dateUtils';
 import { format } from 'date-fns';
+import { Image as ImageIcon } from "lucide-react";
   
 
 interface PetFormProps {
@@ -27,7 +26,6 @@ interface PetFormState {
 
 const MAX_NAME_LENGTH = 50;
 const MAX_BIO_LENGTH = 500;
-const MAX_AGE = 30;
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB após compressão
 const MAX_IMAGE_WIDTH = 800; // Largura máxima da imagem
 const MAX_IMAGE_HEIGHT = 800; // Altura máxima da imagem
@@ -63,7 +61,6 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [ownerName, setOwnerName] = useState('');
-  const [calculatedAge, setCalculatedAge] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Resetar o estado sempre que o formulário for aberto
@@ -108,45 +105,6 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
     };
     fetchOwnerName();
   }, [user]);
-
-  // Calcular idade quando as datas mudarem
-  useEffect(() => {
-    const birthDate = parseDate(petState.birthDate);
-    const adoptionDate = parseDate(petState.adoptionDate);
-
-    if (birthDate || adoptionDate) {
-      const months = calculateAgeInMonths(birthDate || new Date(), adoptionDate);
-      setCalculatedAge(formatAge(months));
-    } else {
-      setCalculatedAge('');
-    }
-  }, [petState.birthDate, petState.adoptionDate]);
-
-  // Função para calcular idade em anos e meses
-  function getAgeString(birthDateStr: string, adoptionDateStr: string): string {
-    let refDate: Date | undefined;
-    if (birthDateStr) {
-      refDate = new Date(birthDateStr);
-    } else if (adoptionDateStr) {
-      refDate = new Date(adoptionDateStr);
-    }
-    if (!refDate || isNaN(refDate.getTime())) return '';
-    const now = new Date();
-    let years = now.getFullYear() - refDate.getFullYear();
-    let months = now.getMonth() - refDate.getMonth();
-    if (months < 0) {
-      years--;
-      months += 12;
-    }
-    if (years < 0) return '';
-    let result = '';
-    if (years > 0) result += `${years} ${years === 1 ? 'ano' : 'anos'}`;
-    if (months > 0) result += `${years > 0 ? ' e ' : ''}${months} ${months === 1 ? 'mês' : 'meses'}`;
-    if (!result) result = 'Menos de 1 mês';
-    return result;
-  }
-
-  const idadePet = getAgeString(petState.birthDate, petState.adoptionDate);
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
@@ -465,16 +423,6 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
             />
           </div>
         </div>
-
-        {(petState.birthDate || petState.adoptionDate) && (
-          <div className="text-sm text-gray-600 mt-2">
-            Idade do pet: <b>{idadePet}</b>
-          </div>
-        )}
-
-        {error.includes('dates') && (
-          <p className="text-sm text-red-600">{error}</p>
-        )}
         
         <div>
           <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">Biografia</label>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import {
   User as FirebaseUser,
   createUserWithEmailAndPassword,
@@ -7,11 +7,10 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { createUserDocument, getUserRole, getUserById } from '@/lib/users';
+import { createUserDocument, getUserById } from '@/lib/users';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setCredentials, logout as logoutAction } from '@/store/slices/authSlice';
-import { User } from '@/types';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -82,10 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Atualizar o Redux com os dados do usuário
-      dispatch(setCredentials({
-        user: userDoc,
-        token: await userCredential.user.getIdToken()
-      }));
+      dispatch(setCredentials(userDoc, await userCredential.user.getIdToken()));
 
       // Se chegou aqui, o usuário está aprovado
       if (userDoc.role === 'admin') {
@@ -144,10 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           // Atualizar o Redux com os dados do usuário
-          dispatch(setCredentials({
-            user: userDoc,
-            token: await firebaseUser.getIdToken()
-          }));
+          dispatch(setCredentials(userDoc, await firebaseUser.getIdToken()));
 
           // Se chegou aqui, o usuário está aprovado
           if (userDoc.role === 'admin') {
