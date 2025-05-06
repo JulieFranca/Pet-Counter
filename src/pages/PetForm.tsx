@@ -1,10 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Pet } from '@/types';
 import { X, Image as ImageIcon } from "lucide-react";
 import { DEFAULT_PET_IMAGE, MAX_IMAGE_SIZE, ALLOWED_IMAGE_TYPES, PET_IMAGES_DIR } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { addPet, updatePet, PetData } from '@/lib/pets';
 import imageCompression from 'browser-image-compression';
+import { getUserById } from '@/lib/users';
+import { calculateAgeInMonths, formatAge, formatDate, parseDate } from '@/utils/dateUtils';
+import { format } from 'date-fns';
+  
 
 interface PetFormProps {
   onClose: () => void;
@@ -17,6 +21,8 @@ interface PetFormState {
   age: number | '';
   bio: string;
   photo: string | null;
+  birthDate: string;
+  adoptionDate: string;
 }
 
 const MAX_NAME_LENGTH = 50;
@@ -26,20 +32,109 @@ const MAX_FILE_SIZE = 1024 * 1024; // 1MB após compressão
 const MAX_IMAGE_WIDTH = 800; // Largura máxima da imagem
 const MAX_IMAGE_HEIGHT = 800; // Altura máxima da imagem
 
+// Função utilitária para formatar data para input type="date"
+function toInputDate(date: any): string {
+  if (!date) return '';
+  // Firestore Timestamp
+  if (date.seconds && date.toDate) {
+    date = date.toDate();
+  }
+  if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) return date;
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (d instanceof Date && !isNaN(d.getTime())) {
+    return format(d, 'yyyy-MM-dd');
+  }
+  return '';
+}
+
 const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
   const { user } = useAuth();
-  const [petState, setPetState] = useState<PetFormState>({
+  const [petState, setPetState] = useState<PetFormState>(() => ({
     name: pet?.name || '',
     age: pet?.age || '',
     bio: pet?.bio || '',
     photo: pet?.photo || DEFAULT_PET_IMAGE,
-  });
+    birthDate: pet?.birthDate ? toInputDate(pet.birthDate) : '',
+    adoptionDate: pet?.adoptionDate ? toInputDate(pet.adoptionDate) : '',
+  }));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [previewUrl, setPreviewUrl] = useState<string>(pet?.photo || DEFAULT_PET_IMAGE);
+  const [previewUrl, setPreviewUrl] = useState<string>(() => pet?.photo || DEFAULT_PET_IMAGE);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [ownerName, setOwnerName] = useState('');
+  const [calculatedAge, setCalculatedAge] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Resetar o estado quando o pet prop mudar
+  useEffect(() => {
+    if (pet) {
+      setPetState({
+        name: pet.name || '',
+        age: pet.age || '',
+        bio: pet.bio || '',
+        photo: pet.photo || DEFAULT_PET_IMAGE,
+        birthDate: pet.birthDate ? toInputDate(pet.birthDate) : '',
+        adoptionDate: pet.adoptionDate ? toInputDate(pet.adoptionDate) : '',
+      });
+      setPreviewUrl(pet.photo || DEFAULT_PET_IMAGE);
+    }
+  }, [pet]);
+
+  useEffect(() => {
+    const fetchOwnerName = async () => {
+      if (user) {
+        try {
+          const userDoc = await getUserById(user.uid);
+          if (userDoc) {
+            setOwnerName(`${userDoc.firstName} ${userDoc.lastName}`);
+          }
+        } catch (error) {
+          console.error('Erro ao buscar nome do dono:', error);
+        }
+      }
+    };
+    fetchOwnerName();
+  }, [user]);
+
+  // Calcular idade quando as datas mudarem
+  useEffect(() => {
+    const birthDate = parseDate(petState.birthDate);
+    const adoptionDate = parseDate(petState.adoptionDate);
+
+    if (birthDate || adoptionDate) {
+      const months = calculateAgeInMonths(birthDate || new Date(), adoptionDate);
+      setCalculatedAge(formatAge(months));
+    } else {
+      setCalculatedAge('');
+    }
+  }, [petState.birthDate, petState.adoptionDate]);
+
+  // Função para calcular idade em anos e meses
+  function getAgeString(birthDateStr: string, adoptionDateStr: string): string {
+    let refDate: Date | undefined;
+    if (birthDateStr) {
+      refDate = new Date(birthDateStr);
+    } else if (adoptionDateStr) {
+      refDate = new Date(adoptionDateStr);
+    }
+    if (!refDate || isNaN(refDate.getTime())) return '';
+    const now = new Date();
+    let years = now.getFullYear() - refDate.getFullYear();
+    let months = now.getMonth() - refDate.getMonth();
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+    if (years < 0) return '';
+    let result = '';
+    if (years > 0) result += `${years} ${years === 1 ? 'ano' : 'anos'}`;
+    if (months > 0) result += `${years > 0 ? ' e ' : ''}${months} ${months === 1 ? 'mês' : 'meses'}`;
+    if (!result) result = 'Menos de 1 mês';
+    return result;
+  }
+
+  const idadePet = getAgeString(petState.birthDate, petState.adoptionDate);
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
@@ -78,15 +173,16 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
 
   const compressImage = async (file: File): Promise<File> => {
     const options = {
-      maxSizeMB: 1,
+      maxSizeMB: 0.8, // Reduzindo para 800KB
       maxWidthOrHeight: Math.max(MAX_IMAGE_WIDTH, MAX_IMAGE_HEIGHT),
       useWebWorker: true,
       fileType: file.type as string,
+      initialQuality: 0.7, // Reduzindo a qualidade inicial
     };
 
     try {
       return await imageCompression(file, options);
-        } catch (error) {
+    } catch (error) {
       console.error('Erro na compressão:', error);
       throw new Error('Erro ao comprimir imagem');
     }
@@ -122,7 +218,8 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
         }
 
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL(img.src.startsWith('data:image/png') ? 'image/png' : 'image/jpeg', 0.8));
+        // Reduzindo a qualidade do JPEG para 0.6
+        resolve(canvas.toDataURL(img.src.startsWith('data:image/png') ? 'image/png' : 'image/jpeg', 0.6));
       };
       img.onerror = () => reject(new Error('Erro ao carregar imagem'));
     });
@@ -165,11 +262,9 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
             try {
               setUploadProgress(70);
               const base64 = reader.result as string;
-              
               // Redimensionar se necessário
               const resizedBase64 = await resizeImage(base64);
               setUploadProgress(90);
-              
               resolve(resizedBase64);
             } catch (e) {
               reject(e);
@@ -224,9 +319,12 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
       errors.name = 'O nome deve conter apenas letras e espaços';
     }
 
-    // Validação da idade
-    if (petState.age !== '' && (typeof petState.age === 'number' && (petState.age < 0 || petState.age > MAX_AGE))) {
-      errors.age = `Idade deve estar entre 0 e ${MAX_AGE} anos`;
+    // Validação das datas
+    const birthDate = parseDate(petState.birthDate);
+    const adoptionDate = parseDate(petState.adoptionDate);
+
+    if (birthDate && adoptionDate && birthDate > adoptionDate) {
+      errors.dates = 'A data de nascimento não pode ser posterior à data de adoção';
     }
 
     // Validação da bio
@@ -254,16 +352,25 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
         throw new Error('Usuário não autenticado');
       }
 
+      // Converter datas de string para Date
+      const birthDate = petState.birthDate ? new Date(petState.birthDate) : undefined;
+      const adoptionDate = petState.adoptionDate ? new Date(petState.adoptionDate) : undefined;
+      const ageInMonths = birthDate 
+        ? calculateAgeInMonths(birthDate, adoptionDate)
+        : undefined;
+
       const petData = {
         name: petState.name.trim(),
         bio: petState.bio.trim(),
-        photo: petState.photo || undefined,
+        photo: petState.photo || DEFAULT_PET_IMAGE,
         ownerId: user.uid,
-        ...(petState.age !== '' && { age: Number(petState.age) }),
+        ...(birthDate && { birthDate }),
+        ...(adoptionDate && { adoptionDate }),
+        ...(ageInMonths && { ageInMonths }),
       };
 
       if (pet?.id) {
-        await updatePet(pet.id, petData);
+        await updatePet(pet.id, user.uid, petData);
       } else {
         await addPet(petData);
       }
@@ -309,24 +416,48 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
             <p className="mt-1 text-sm text-red-600">{error}</p>
           )}
         </div>
-        
-        <div>
-          <label htmlFor="age" className="block text-sm font-medium text-gray-700 mb-1">Idade (anos)</label>
-          <input
-            type="number"
-            id="age"
-            name="age"
-            value={petState.age}
-            onChange={handleInputChange}
-            min="0"
-            max={MAX_AGE}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            placeholder="Idade do pet"
-          />
-          {error.includes('age') && (
-            <p className="mt-1 text-sm text-red-600">{error}</p>
-          )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-1">
+              Data de Nascimento
+            </label>
+            <input
+              type="date"
+              id="birthDate"
+              name="birthDate"
+              value={petState.birthDate}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              placeholder="AAAA-MM-DD"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="adoptionDate" className="block text-sm font-medium text-gray-700 mb-1">
+              Data de Adoção
+            </label>
+            <input
+              type="date"
+              id="adoptionDate"
+              name="adoptionDate"
+              value={petState.adoptionDate}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              placeholder="AAAA-MM-DD"
+            />
+          </div>
         </div>
+
+        {(petState.birthDate || petState.adoptionDate) && (
+          <div className="text-sm text-gray-600 mt-2">
+            Idade do pet: <b>{idadePet}</b>
+          </div>
+        )}
+
+        {error.includes('dates') && (
+          <p className="text-sm text-red-600">{error}</p>
+        )}
         
         <div>
           <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">Biografia</label>
@@ -344,6 +475,11 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
           {error.includes('bio') && (
             <p className="mt-1 text-sm text-red-600">{error}</p>
           )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Dono</label>
+          <p className="text-gray-600">{ownerName}</p>
         </div>
         
         <div>
@@ -415,18 +551,18 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             disabled={loading}
-            >
-              Cancelar
+          >
+            Cancelar
           </button>
           <button
-              type="submit"
+            type="submit"
             className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              disabled={loading}
-            >
+            disabled={loading}
+          >
             {loading ? 'Salvando...' : pet ? 'Atualizar' : 'Cadastrar'}
           </button>
         </div>
-        </form>
+      </form>
     </div>
   );
 };

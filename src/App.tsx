@@ -6,6 +6,7 @@ import PetCounter from '@/pages/PetCounter';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import Pending from '@/pages/Pending';
+import CompleteProfile from '@/pages/CompleteProfile';
 import { useAuth } from '@/contexts/AuthContext';
 import PrivateRoute from '@/components/PrivateRoute';
 
@@ -26,6 +27,7 @@ const App: React.FC = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/pending" element={<Pending />} />
+      <Route path="/complete-profile" element={<CompleteProfile />} />
 
       {/* Rotas protegidas */}
       <Route

@@ -8,20 +8,24 @@ export interface User {
   role: 'admin' | 'user';
   status: 'pending' | 'approved' | 'rejected';
   isActive: boolean;
+  hasCompletedProfile: boolean;
   createdAt: Date;
   updatedAt: Date;
-  hasCompletedProfile: boolean;
 }
 
 export interface Pet {
   id: string;
   name: string;
-  ownerId: string;
-  photo?: string;
   age?: number;
   bio?: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  photo?: string;
+  ownerId: string;
+  ownerName: string;
+  birthDate?: Date;
+  adoptionDate?: Date;
+  ageInMonths?: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface PendingUser {
@@ -38,12 +42,24 @@ export interface AuthState {
   rememberMe: boolean;
 }
 
-export interface PetFormData {
+export interface PetData {
   name: string;
-  age: string | number;
+  age?: number;
+  bio?: string;
+  photo?: string;
+  ownerId: string;
+  birthDate?: Date;
+  adoptionDate?: Date;
+  ageInMonths?: number;
+}
+
+export interface PetFormState {
+  name: string;
+  age: number | '';
   bio: string;
-  photo: string;
-  owner?: string;
+  photo: string | null;
+  birthDate: string;
+  adoptionDate: string;
 }
 
 export interface LayoutProps {

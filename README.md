@@ -1,55 +1,95 @@
-# Pet Count
+# Pet Counter
 
-Aplicativo para cadastro e gerenciamento de pets, com funcionalidades para usuários comuns e administradores.
+Aplicação para cadastro, gerenciamento e contagem de pets, com autenticação de usuários, painel administrativo e funcionalidades avançadas de perfil.
 
 ## Funcionalidades
 
-- Cadastro e login de usuários com sistema de aprovação
-- Cadastro e gerenciamento de pets com upload de fotos
-- Sistema de notificações em tempo real
-- Painel administrativo com gerenciamento de usuários
-- Contador público de pets em tempo real
-- Interface responsiva para dispositivos móveis
-- Sistema de roles (admin/user)
-- Perfil de usuário com nome e sobrenome
-- Upload de imagens com compressão e redimensionamento automático
-- Sistema de notificações para novos pets cadastrados
+- **Cadastro de Usuário:**  
+  - Campos obrigatórios: nome, sobrenome, e-mail, senha (com validação forte).
+  - Fluxo de perfil incompleto: usuários antigos ou incompletos são direcionados para preencher nome e sobrenome.
+  - Mensagens de erro amigáveis para e-mail já em uso, e-mail inválido e senha fraca.
+
+- **Gestão de Pets:**  
+  - Cadastro, edição e remoção de pets.
+  - Upload de imagem do pet com compressão automática e validação de tamanho (máx. 1MB).
+  - Campos de data de nascimento e adoção, com preenchimento automático ao editar.
+  - Cálculo dinâmico da idade do pet em anos e meses, exibido no formulário e atualizado ao alterar datas.
+  - Exibição do nome completo do dono do pet em todas as listagens.
+
+- **Painel Administrativo:**  
+  - Aprovação e rejeição de novos usuários.
+  - Listagem de usuários ativos com nome completo, e-mail e role.
+  - Listagem de todos os pets com nome do dono (nome completo).
+  - Ações de editar e remover pets diretamente na área do usuário.
+
+- **Notificações:**  
+  - Notificações para novos pets cadastrados.
+
+- **Configuração de Admin via `.env`:**  
+  - Permite definir múltiplos administradores com nome, sobrenome, e-mail e senha.
+
+## Instalação
+
+1. **Clone o repositório:**
+   ```bash
+   git clone https://github.com/seu-usuario/pet-counter.git
+   cd pet-counter
+   ```
+
+2. **Instale as dependências:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure o arquivo `.env`:**
+   Exemplo:
+   ```
+   # Firebase Configuration
+   VITE_FIREBASE_API_KEY=...
+   VITE_FIREBASE_AUTH_DOMAIN=...
+   VITE_FIREBASE_PROJECT_ID=...
+   VITE_FIREBASE_STORAGE_BUCKET=...
+   VITE_FIREBASE_MESSAGING_SENDER_ID=...
+   VITE_FIREBASE_APP_ID=...
+
+   # Admin Configuration
+   # ADMIN_EMAIL_2=seu-email-admin-2@exemplo.com
+   # ADMIN_PASSWORD_2=sua-senha-admin-2
+   # ADMIN_FIRSTNAME_2=NomeDoAdmin2
+   # ADMIN_LASTNAME_2=SobreNomeDoAdmin2
+   ```
+
+4. **Rode a aplicação:**
+   ```bash
+   npm run dev
+   ```
+
+## Principais Melhorias Recentes
+
+- **Datas de nascimento e adoção agora são salvas corretamente no banco de dados.**
+- **Campos de data são preenchidos automaticamente ao editar um pet.**
+- **Idade do pet exibida dinamicamente em anos e meses, considerando nascimento ou adoção.**
+- **Upload de imagem restaurado para fluxo simples e funcional.**
+- **Exibição do nome completo do usuário e do dono do pet em todas as telas.**
+- **Ações de editar e remover pets disponíveis diretamente na área do usuário.**
+- **Validações e mensagens de erro aprimoradas.**
+- **Configuração de múltiplos administradores via `.env`.**
+
+## Observações
+
+- Certifique-se de que o Firebase está corretamente configurado.
+- Para evitar problemas de dependências, sempre rode `npm install` após atualizar o projeto ou o arquivo `.env`.
+- Caso enfrente problemas com datas, verifique se o Firestore está aceitando objetos do tipo `Date` ou `Timestamp`.
+
+---
+
+Se precisar de mais detalhes ou quiser personalizar o README, me avise!
 
 ## Requisitos
 
 - Node.js 16 ou superior
 - npm ou yarn
 - Firebase (para autenticação e banco de dados)
-
-## Instalação
-
-1. Clone o repositório:
-```bash
-git clone [url-do-repositorio]
-cd pet-count
-```
-
-2. Instale as dependências:
-```bash
-npm install
-```
-
-3. Configure as variáveis de ambiente do Firebase:
-- Crie um arquivo `.env` na raiz do projeto
-- Adicione as configurações do Firebase:
-```
-REACT_APP_FIREBASE_API_KEY=
-REACT_APP_FIREBASE_AUTH_DOMAIN=
-REACT_APP_FIREBASE_PROJECT_ID=
-REACT_APP_FIREBASE_STORAGE_BUCKET=
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=
-REACT_APP_FIREBASE_APP_ID=
-```
-
-4. Inicie o servidor e a aplicação:
-```bash
-npm start
-```
 
 ## Estrutura do Projeto
 

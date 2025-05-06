@@ -4,6 +4,8 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import PetForm from './PetForm';
 import Login from './Login';
+import { Pencil, Trash2 } from 'lucide-react';
+import { deletePet } from '@/lib/pets';
 
 interface Pet {
   id: string;
@@ -17,6 +19,8 @@ const PetCounter: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const { user } = useAuth();
+  const [editingPet, setEditingPet] = useState<Pet | null>(null);
+  const [deletingPet, setDeletingPet] = useState<Pet | null>(null);
 
   useEffect(() => {
     // Criar query para buscar todos os pets
@@ -81,7 +85,7 @@ const PetCounter: React.FC = () => {
                   key={pet.id}
                   className="bg-white overflow-hidden shadow-sm rounded-lg"
                 >
-                  <div className="p-6">
+                  <div className="p-6 flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="h-12 w-12 rounded-full overflow-hidden">
                         <img
@@ -96,10 +100,68 @@ const PetCounter: React.FC = () => {
                         </h3>
                       </div>
                     </div>
+                    <div className="flex gap-2">
+                      <button
+                        title="Editar"
+                        className="text-blue-600 hover:text-blue-800"
+                        onClick={() => setEditingPet(pet)}
+                      >
+                        <Pencil className="w-5 h-5" />
+                      </button>
+                      <button
+                        title="Remover"
+                        className="text-red-600 hover:text-red-800"
+                        onClick={() => setDeletingPet(pet)}
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Modal de Edição */}
+            {editingPet && (
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                  <PetForm
+                    pet={editingPet}
+                    onClose={() => setEditingPet(null)}
+                    onSuccess={() => {
+                      setEditingPet(null);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Modal de Confirmação de Remoção */}
+            {deletingPet && (
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                  <h2 className="text-lg font-bold mb-4">Remover Pet</h2>
+                  <p className="mb-6">Tem certeza que deseja remover o pet <b>{deletingPet.name}</b>?</p>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                      onClick={() => setDeletingPet(null)}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                      onClick={async () => {
+                        await deletePet(deletingPet.id, user.uid);
+                        setDeletingPet(null);
+                      }}
+                    >
+                      Remover
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 
