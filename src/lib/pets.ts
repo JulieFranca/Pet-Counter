@@ -24,14 +24,37 @@ export interface PetData {
   bio?: string;
   photo?: string | null;
   ownerId: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  birthDate?: Date;
+  adoptionDate?: Date;
+  ageInMonths?: number;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
 }
 
 export const addPet = async (petData: Omit<PetData, 'createdAt' | 'updatedAt'>) => {
   const now = Timestamp.now();
+  
+  // Verificar tamanho da imagem antes de salvar
+  if (petData.photo && typeof petData.photo === 'string') {
+    // Calcular tamanho aproximado da string base64
+    const base64Size = Math.ceil((petData.photo.length * 3) / 4);
+    const base64SizeMB = base64Size / (1024 * 1024);
+    
+    if (base64Size > 1000000) { // 1MB em bytes
+      throw new Error(`A imagem é muito grande. Tamanho atual: ${base64SizeMB.toFixed(1)}MB. Tamanho máximo permitido: 1MB`);
+    }
+  }
+  
+  // Remover campos undefined
+  const cleanPetData = Object.entries(petData).reduce((acc, [key, value]) => {
+    if (value !== undefined && value !== null) {
+      acc[key] = value;
+    }
+    return acc;
+  }, {} as Record<string, any>);
+
   const newPet = {
-    ...petData,
+    ...cleanPetData,
     createdAt: now,
     updatedAt: now,
   };
@@ -41,6 +64,9 @@ export const addPet = async (petData: Omit<PetData, 'createdAt' | 'updatedAt'>) 
     return docRef.id;
   } catch (error) {
     console.error('Erro ao adicionar pet:', error);
+    if (error instanceof Error && error.message.includes('bytes')) {
+      throw new Error('A imagem é muito grande. Por favor, escolha uma imagem menor que 1MB.');
+    }
     throw new Error('Erro ao salvar o pet');
   }
 };
@@ -172,15 +198,29 @@ export const notifyNewPet = async (pet: Pet) => {
 export const createPet = async (petData: PetData, userId: string) => {
   try {
     const petRef = doc(collection(db, 'pets'));
+    
+    // Buscar dados do dono
+    const ownerDoc = await getDoc(doc(db, 'users', userId));
+    const ownerData = ownerDoc.data();
+    const ownerName = ownerData?.firstName 
+      ? `${ownerData.firstName} ${ownerData.lastName}`
+      : ownerData?.email || '';
+
+    const now = Timestamp.now();
     const newPet = {
       ...petData,
       photo: petData.photo || DEFAULT_PET_IMAGE, // Usar foto padrão se nenhuma for fornecida
       ownerId: userId,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
+      ownerName,
+      createdAt: now.toDate(),
+      updatedAt: now.toDate()
     };
 
-    await setDoc(petRef, newPet);
+    await setDoc(petRef, {
+      ...newPet,
+      createdAt: now,
+      updatedAt: now
+    });
 
     // Criar notificação para todos os usuários
     await notifyNewPet({

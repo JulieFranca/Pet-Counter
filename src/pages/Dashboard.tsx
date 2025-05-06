@@ -206,7 +206,10 @@ export default function Dashboard() {
                 .map((user) => (
                   <li key={user.id} className="py-4 flex justify-between items-center">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{user.email}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {user.firstName} {user.lastName}
+                      </p>
+                      <p className="text-sm text-gray-500">{user.email}</p>
                       <span className="text-sm text-gray-500 inline-flex items-center">
                         Role: <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                           user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
@@ -246,31 +249,34 @@ export default function Dashboard() {
           <h2 className="text-lg font-medium text-gray-900">Todos os Pets</h2>
           <div className="mt-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {pets.map((pet) => (
-                <div key={pet.id} className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="h-12 w-12 rounded-full overflow-hidden">
-                      <img
-                        src={pet.photo || DEFAULT_PET_IMAGE}
-                        alt={pet.name}
-                        className="h-full w-full object-cover"
-                      />
+              {pets.map((pet) => {
+                const owner = allUsers.find(u => u.id === pet.ownerId);
+                return (
+                  <div key={pet.id} className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="h-12 w-12 rounded-full overflow-hidden">
+                        <img
+                          src={pet.photo || DEFAULT_PET_IMAGE}
+                          alt={pet.name}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{pet.name}</p>
+                        <p className="text-sm text-gray-500">
+                          Dono: {owner ? `${owner.firstName} ${owner.lastName}` : 'Usuário não encontrado'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleDeletePet(pet.id, pet.ownerId)}
+                        className="ml-auto bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                      >
+                        Remover
+                      </button>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{pet.name}</p>
-                      <p className="text-sm text-gray-500">
-                        Dono: {allUsers.find(u => u.id === pet.ownerId)?.email}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleDeletePet(pet.id, pet.ownerId)}
-                      className="ml-auto bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                    >
-                      Remover
-                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
