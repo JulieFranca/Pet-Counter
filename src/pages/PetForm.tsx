@@ -66,7 +66,7 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
   const [calculatedAge, setCalculatedAge] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Resetar o estado quando o pet prop mudar
+  // Resetar o estado sempre que o formulário for aberto
   useEffect(() => {
     if (pet) {
       setPetState({
@@ -78,7 +78,19 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
         adoptionDate: pet.adoptionDate ? toInputDate(pet.adoptionDate) : '',
       });
       setPreviewUrl(pet.photo || DEFAULT_PET_IMAGE);
+    } else {
+      setPetState({
+        name: '',
+        age: '',
+        bio: '',
+        photo: DEFAULT_PET_IMAGE,
+        birthDate: '',
+        adoptionDate: '',
+      });
+      setPreviewUrl(DEFAULT_PET_IMAGE);
     }
+    setLoading(false); // Resetar loading sempre que abrir o form
+    setError(''); // Limpar erro ao abrir o form
   }, [pet]);
 
   useEffect(() => {
@@ -396,7 +408,12 @@ const PetForm: React.FC<PetFormProps> = ({ onClose, onSuccess, pet }) => {
           ✕
         </button>
       </div>
-      
+      {/* Exibir erro geral no topo do formulário */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
